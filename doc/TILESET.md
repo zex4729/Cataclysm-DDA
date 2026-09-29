@@ -591,6 +591,23 @@ Example usage of flag `context` and `append_variants`:
 
 `"offset_x": 16`, `"offset_y": -48` optional sprite offset. Defaults to 0 if not provided.
 
+## 3D view
+
+The tiles build can draw the map as a first person 3D view instead of a flat grid of tiles. Turn it on with the option `3D view` (`Options > Graphics`), or bind a key to `Toggle 3D view` to switch while playing. The view follows the character: when they step, the camera turns to face that way. Keys can be bound to `Turn 3D view left` and `Turn 3D view right` to look around.
+
+Nothing has to be added to a tileset for this to work, the view uses the sprites the tileset already has, chosen and lit the same way as in the flat view (including `looks_like`, variants, rotation and memorized tiles). How a sprite is put in the scene depends on what it is a sprite of:
+
+| Sprite of | Drawn as |
+|---|---|
+| terrain that can't be walked through (walls, closed doors, windows, trees, ...) | a block, a tile wide and a tile high, with the sprite on all of its sides |
+| any other terrain, traps and fields | a quad on the floor, the way the flat view shows it from above (`rotates` is honored) |
+| creatures, furniture and vehicle parts | an upright quad standing on the floor, always facing the camera |
+| items | the same, half the size, for the top item of a pile only |
+
+Upright sprites keep the size they have relative to a tile, so a sprite that is two tiles tall is two tiles tall in the scene. `pixelscale` and the sprite's offsets are honored, and a sprite that is mirrored in the flat view (creatures facing left) is mirrored in the 3D view too. The contextual sprites of `layering.json` are not used, since only the top item is shown.
+
+The map is drawn from the far side to the near side, without a depth buffer, so a sprite is only ever hidden by what is nearer to the camera. Cursors and other markers drawn by the game are put on the floor after everything else, and can be seen through walls. Animations such as bullets, explosions and floating text are not drawn in this view yet.
+
 ## `compose.py`
 
 [`tools/gfx_tools/compose.py`](/tools/gfx_tools/compose.py)

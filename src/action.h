@@ -353,6 +353,12 @@ enum action_id : int {
     ACTION_DISPLAY_TRANSPARENCY,
     /** Toggle retracted/transparent high sprites */
     ACTION_TOGGLE_PREVENT_OCCLUSION,
+    /** Toggle the first person 3D view of the map (tiles only) */
+    ACTION_TOGGLE_3D_VIEW,
+    /** Turn the 3D view a step to the left (tiles only) */
+    ACTION_TURN_3D_VIEW_LEFT,
+    /** Turn the 3D view a step to the right (tiles only) */
+    ACTION_TURN_3D_VIEW_RIGHT,
     ACTION_DISPLAY_NPC_ATTACK_POTENTIAL,
     /** Toggle timing of the game hours */
     ACTION_TOGGLE_HOUR_TIMER,

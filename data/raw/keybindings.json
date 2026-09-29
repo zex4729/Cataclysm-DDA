@@ -3586,6 +3586,24 @@
   },
   {
     "type": "keybinding",
+    "name": "Toggle 3D view",
+    "category": "DEFAULTMODE",
+    "id": "toggle_3d_view"
+  },
+  {
+    "type": "keybinding",
+    "name": "Turn 3D view left",
+    "category": "DEFAULTMODE",
+    "id": "turn_3d_view_left"
+  },
+  {
+    "type": "keybinding",
+    "name": "Turn 3D view right",
+    "category": "DEFAULTMODE",
+    "id": "turn_3d_view_right"
+  },
+  {
+    "type": "keybinding",
     "name": "Action menu",
     "category": "DEFAULTMODE",
     "id": "action_menu",

@@ -653,8 +653,6 @@ void cata_tiles::draw( const point &dest, const tripoint_bub_ms &center, int wid
                              ( you_pos.y() % SEEY ) + ( MAPSIZE - 1 ) * SEEY );
     const int draw_min_z = std::max( you.posz() - fov_3d_z_range, -OVERMAP_DEPTH );
 
-    const level_cache &ch = here.access_cache( center.z() );
-
     // Map memory should be at least the size of the view range
     // so that new tiles can be memorized, and at least the size of the display
     // since at farthest zoom displayed area may be bigger than view range.
@@ -1464,40 +1462,9 @@ void cata_tiles::draw( const point &dest, const tripoint_bub_ms &center, int wid
     void_monster_override();
 
     //Memorize everything the character just saw even if it wasn't displayed.
-    for( int mem_y = min_visible.y; mem_y <= max_visible.y; mem_y++ ) {
-        for( int mem_x = min_visible.x; mem_x <= max_visible.x; mem_x++ ) {
-            const point colrow = player_to_tile( { mem_x, mem_y } );
-            if( is_isometric() && top_any_tile_range.contains( colrow ) ) {
-                continue;
-            }
-            const tripoint_bub_ms p( mem_x, mem_y, center.z() );
-            lit_level lighting = ch.visibility_cache[p.x()][p.y()];
-            // `apply_vision_effects` does not memorize anything so we only need
-            // to call `would_apply_vision_effects` here.
-            if( would_apply_vision_effects( here.get_visibility( lighting, cache ) ) ) {
-                continue;
-            }
-            int height_3d = 0;
-            std::array<bool, 5> invisible;
-            invisible[0] = false;
-            for( int i = 0; i < 4; i++ ) {
-                const tripoint_bub_ms np = p + neighborhood[i];
-                invisible[1 + i] = apply_visible( np, ch, here );
-            }
-            //calling draw to memorize (and only memorize) everything.
-            //bypass cache check in case we learn something new about the terrain's connections
-            draw_terrain( p, lighting, height_3d, invisible, true );
-            if( here.memory_cache_dec_is_dirty( p ) ) {
-                you.memorize_clear_decoration( here.get_abs( p ), "" );
-                draw_furniture( p, lighting, height_3d, invisible, true );
-                draw_trap( p, lighting, height_3d, invisible, true );
-                draw_part_con( p, lighting, height_3d, invisible, true );
-                draw_vpart_no_roof( p, lighting, height_3d, invisible, true );
-                draw_vpart_roof( p, lighting, height_3d, invisible, true );
-                here.memory_cache_dec_set_dirty( p, false );
-            }
-        }
-    }
+    memorize_visible_map( min_visible, max_visible, center.z(), [&]( const point & pos ) {
+        return is_isometric() && top_any_tile_range.contains( player_to_tile( point_bub_ms( pos ) ) );
+    } );
 
     in_animation = do_draw_explosion || do_draw_custom_explosion ||
                    do_draw_bullet || do_draw_hit || do_draw_line ||
@@ -1585,6 +1552,55 @@ void cata_tiles::draw( const point &dest, const tripoint_bub_ms &center, int wid
             display_buffer_scope_signal_recovery_required();
             throw std::runtime_error(
                 "cata_tiles::draw: variant_pass flush failed at end of frame; renderer in undefined state" );
+        }
+    }
+}
+
+void cata_tiles::memorize_visible_map( const point &min_visible, const point &max_visible,
+                                       const int z,
+                                       const std::function<bool( const point & )> &skip_tile )
+{
+    map &here = get_map();
+    avatar &you = get_avatar();
+    const visibility_variables &cache = here.get_visibility_variables_cache();
+    const level_cache &ch = here.access_cache( z );
+    const auto apply_visible = [&]( const tripoint_bub_ms & np ) {
+        return np.y() < min_visible.y || np.y() > max_visible.y ||
+               np.x() < min_visible.x || np.x() > max_visible.x ||
+               would_apply_vision_effects( here.get_visibility( ch.visibility_cache[np.x()][np.y()],
+                                           cache ) );
+    };
+    for( int mem_y = min_visible.y; mem_y <= max_visible.y; mem_y++ ) {
+        for( int mem_x = min_visible.x; mem_x <= max_visible.x; mem_x++ ) {
+            if( skip_tile && skip_tile( point( mem_x, mem_y ) ) ) {
+                continue;
+            }
+            const tripoint_bub_ms p( mem_x, mem_y, z );
+            lit_level lighting = ch.visibility_cache[p.x()][p.y()];
+            // `apply_vision_effects` does not memorize anything so we only need
+            // to call `would_apply_vision_effects` here.
+            if( would_apply_vision_effects( here.get_visibility( lighting, cache ) ) ) {
+                continue;
+            }
+            int height_3d = 0;
+            std::array<bool, 5> invisible;
+            invisible[0] = false;
+            for( int i = 0; i < 4; i++ ) {
+                const tripoint_bub_ms np = p + neighborhood[i];
+                invisible[1 + i] = apply_visible( np );
+            }
+            //calling draw to memorize (and only memorize) everything.
+            //bypass cache check in case we learn something new about the terrain's connections
+            draw_terrain( p, lighting, height_3d, invisible, true );
+            if( here.memory_cache_dec_is_dirty( p ) ) {
+                you.memorize_clear_decoration( here.get_abs( p ), "" );
+                draw_furniture( p, lighting, height_3d, invisible, true );
+                draw_trap( p, lighting, height_3d, invisible, true );
+                draw_part_con( p, lighting, height_3d, invisible, true );
+                draw_vpart_no_roof( p, lighting, height_3d, invisible, true );
+                draw_vpart_roof( p, lighting, height_3d, invisible, true );
+                here.memory_cache_dec_set_dirty( p, false );
+            }
         }
     }
 }
@@ -2391,6 +2407,7 @@ bool cata_tiles::draw_from_id_string_internal( const std::string &id, TILE_CATEG
         int intensity_level, const std::string &variant,
         const point &offset )
 {
+    const tile_3d_scope scope_3d( m_scene3d, category, id, pos );
     bool nv_color_active = apply_night_vision_goggles && get_option<bool>( "NV_GREEN_TOGGLE" );
     // If the ID string does not produce a drawable tile
     // it will revert to the "unknown" tile.
@@ -2786,6 +2803,13 @@ bool cata_tiles::draw_sprite_at(
                 sprite_tex = ptr;
             }
         }
+    }
+
+    if( m_scene3d ) {
+        // The 3D view places the sprite in its scene instead of on a tile of the screen
+        draw_sprite_3d( tile, *sprite_tex, shader_bound, rotate_sprite, rota, offset );
+        height_3d += tile.height_3d;
+        return true;
     }
 
     int width = 0;
@@ -3609,7 +3633,8 @@ bool cata_tiles::draw_field_or_item( const tripoint_bub_ms &p, const lit_level l
         const itype *it_type;
         const maptile &tile = here.maptile_at( p );
 
-        if( !invisible[0] ) {
+        // The 3D view shows one item per tile, the top one, not the ones a tileset would layer
+        if( !invisible[0] && !m_scene3d ) {
             bool has_drawn_item = draw_layer_item( tile.get_furn_t().id.str(), tile, variant, drawtop );
             // start by drawing the layering data if available
             // attempt furniture ids, then flags, then terrain ids, then flags
@@ -4101,6 +4126,10 @@ void cata_tiles::flush_sprite_shader_for_untextured_draw()
 
 void cata_tiles::draw_zlevel_overlay( const tripoint_bub_ms &p, const lit_level ll, int &height_3d )
 {
+    if( m_scene3d ) {
+        // A flat rectangle on the screen means nothing in the 3D view
+        return;
+    }
     flush_sprite_shader_for_untextured_draw();
     // Draws zlevel fog using geometry renderer
     // Slower than sprites so only use as fallback when sprite missing

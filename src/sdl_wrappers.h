@@ -241,6 +241,14 @@ void RenderGeometryRaw( const SDL_Renderer_Ptr &renderer,
                         const SDL_FColor *color, int color_stride,
                         int num_vertices,
                         const Uint32 *indices, int num_indices );
+// Textured per-vertex-color triangles. uv are normalized coordinates into the whole texture.
+// Interpolation is affine, callers that need perspective correct results subdivide.
+void RenderGeometryTextured( const SDL_Renderer_Ptr &renderer, SDL_Texture *texture,
+                             const float *xy, int xy_stride,
+                             const SDL_FColor *color, int color_stride,
+                             const float *uv, int uv_stride,
+                             int num_vertices,
+                             const Uint32 *indices, int num_indices );
 void RenderGetClipRect( const SDL_Renderer_Ptr &renderer, SDL_Rect *rect );
 // Returns whether the intersection is non-empty. result is written either way.
 bool GetRectIntersection( const SDL_Rect &a, const SDL_Rect &b, SDL_Rect &result );
