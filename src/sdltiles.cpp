@@ -3659,13 +3659,21 @@ void cata_cursesport::curses_drawwindow( const catacurses::window &w )
 
         // game::w_terrain can be drawn by the tilecontext.
         // skip the normal drawing code for it.
-        tilecontext->draw(
-            point( win->pos.x * fontwidth, win->pos.y * fontheight ),
-            g->ter_view_p,
-            TERRAIN_WINDOW_TERM_WIDTH * font->width,
-            TERRAIN_WINDOW_TERM_HEIGHT * font->height,
-            overlay_strings,
-            color_blocks );
+        if( view_3d_enabled() ) {
+            tilecontext->draw_3d(
+                point( win->pos.x * fontwidth, win->pos.y * fontheight ),
+                g->ter_view_p,
+                TERRAIN_WINDOW_TERM_WIDTH * font->width,
+                TERRAIN_WINDOW_TERM_HEIGHT * font->height );
+        } else {
+            tilecontext->draw(
+                point( win->pos.x * fontwidth, win->pos.y * fontheight ),
+                g->ter_view_p,
+                TERRAIN_WINDOW_TERM_WIDTH * font->width,
+                TERRAIN_WINDOW_TERM_HEIGHT * font->height,
+                overlay_strings,
+                color_blocks );
+        }
 
         // color blocks overlay
         if( !color_blocks.second.empty() ) {
@@ -6666,6 +6674,15 @@ std::optional<tripoint_bub_ms> input_context::get_coordinates( const catacurses:
     }
 
     const point screen_pos = logical_coordinate - win_min;
+
+    if( use_tiles && g && capture_win == g->w_terrain && view_3d_enabled() ) {
+        // The 3D view has no grid of tiles on the screen: ask what is drawn under the pointer
+        const std::optional<point_bub_ms> picked = view_3d_pick( screen_pos );
+        if( !picked ) {
+            return std::nullopt;
+        }
+        return tripoint_bub_ms( *picked, get_map().get_abs_sub().z() );
+    }
 
     const bool use_isometric = g->w_overmap &&
                                capture_win == g->w_overmap ? false : g->is_tileset_isometric();

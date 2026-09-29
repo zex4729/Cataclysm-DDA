@@ -507,6 +507,34 @@ void RenderGeometryRaw( const SDL_Renderer_Ptr &renderer,
                   "SDL_RenderGeometryRaw failed" );
 }
 
+void RenderGeometryTextured( const SDL_Renderer_Ptr &renderer, SDL_Texture *const texture,
+                             const float *const xy, const int xy_stride,
+                             const SDL_FColor *const color, const int color_stride,
+                             const float *const uv, const int uv_stride,
+                             const int num_vertices,
+                             const Uint32 *const indices, const int num_indices )
+{
+    if( !renderer ) {
+        dbg( D_ERROR ) << "Tried to render geometry to a null renderer";
+        return;
+    }
+    if( !texture ) {
+        dbg( D_ERROR ) << "Tried to render a null texture";
+        return;
+    }
+    if( num_vertices <= 0 || num_indices <= 0 ) {
+        return;
+    }
+    printErrorIf( !SDL_RenderGeometryRaw( renderer.get(), texture,
+                                          xy, xy_stride,
+                                          color, color_stride,
+                                          uv, uv_stride,
+                                          num_vertices,
+                                          indices, num_indices,
+                                          static_cast<int>( sizeof( Uint32 ) ) ),
+                  "SDL_RenderGeometryRaw failed" );
+}
+
 bool GetRectIntersection( const SDL_Rect &a, const SDL_Rect &b, SDL_Rect &result )
 {
     return SDL_GetRectIntersection( &a, &b, &result );

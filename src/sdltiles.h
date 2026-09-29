@@ -55,6 +55,18 @@ void rescale_tileset( int size );
 bool save_screenshot( const std::string &file_path );
 void toggle_fullscreen_window();
 
+/** True when the map is shown as a first person 3D view (see cata_tiles_3d.cpp). */
+bool view_3d_enabled();
+/** Which way the 3D view looks, in degrees clockwise from north. */
+float view_3d_heading();
+/** Turns the 3D view by the given number of degrees, clockwise when positive. */
+void turn_view_3d( float degrees );
+/**
+ * The map cell that is drawn under a pixel of the terrain window, when the map is shown in 3D.
+ * Nothing when the pixel shows the sky, or nothing that could be told apart from it.
+ */
+std::optional<point_bub_ms> view_3d_pick( const point &pixel );
+
 struct window_dimensions {
     point scaled_font_size;
     point window_pos_cell;

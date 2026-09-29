@@ -112,6 +112,11 @@ enum class direction : unsigned int;
 #include "sdltiles.h"
 #endif
 
+#if defined(TILES)
+// How far the turn 3D view actions turn the view, in degrees
+static constexpr float view_3d_turn_step = 45.0f;
+#endif
+
 static const bionic_id bio_remote( "bio_remote" );
 
 static const character_modifier_id
@@ -3131,6 +3136,23 @@ bool game::do_regular_action( action_id &act, avatar &player_character,
         case ACTION_TOGGLE_PREVENT_OCCLUSION:
             set_next_option( "PREVENT_OCCLUSION" );
             break;
+
+#if defined(TILES)
+        case ACTION_TOGGLE_3D_VIEW:
+            set_next_option( "VIEW_3D" );
+            mark_main_ui_adaptor_resize();
+            break;
+
+        case ACTION_TURN_3D_VIEW_LEFT:
+            turn_view_3d( -view_3d_turn_step );
+            invalidate_main_ui_adaptor();
+            break;
+
+        case ACTION_TURN_3D_VIEW_RIGHT:
+            turn_view_3d( view_3d_turn_step );
+            invalidate_main_ui_adaptor();
+            break;
+#endif // TILES
 
         case ACTION_ZOOM_IN:
             zoom_in();

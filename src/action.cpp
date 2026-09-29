@@ -369,6 +369,12 @@ std::string action_ident( action_id act )
             return "toggle_auto_pickup";
         case ACTION_TOGGLE_PREVENT_OCCLUSION:
             return "toggle_prevent_occlusion";
+        case ACTION_TOGGLE_3D_VIEW:
+            return "toggle_3d_view";
+        case ACTION_TURN_3D_VIEW_LEFT:
+            return "turn_3d_view_left";
+        case ACTION_TURN_3D_VIEW_RIGHT:
+            return "turn_3d_view_right";
         case ACTION_ACTIONMENU:
             return "action_menu";
         case ACTION_INTERACT:
@@ -462,6 +468,9 @@ bool can_action_change_worldstate( const action_id act )
         case ACTION_ZOOM_OUT:
         case ACTION_ZOOM_IN:
         case ACTION_TOGGLE_PIXEL_MINIMAP:
+        case ACTION_TOGGLE_3D_VIEW:
+        case ACTION_TURN_3D_VIEW_LEFT:
+        case ACTION_TURN_3D_VIEW_RIGHT:
         case ACTION_TOGGLE_PANEL_ADM:
         case ACTION_PANEL_MGMT:
         case ACTION_RELOAD_TILESET:
@@ -965,6 +974,9 @@ action_id handle_action_menu( map &here )
             REGISTER_ACTION( ACTION_TOGGLE_PIXEL_MINIMAP );
             REGISTER_ACTION( ACTION_RELOAD_TILESET );
             REGISTER_ACTION( ACTION_TOGGLE_PREVENT_OCCLUSION );
+            REGISTER_ACTION( ACTION_TOGGLE_3D_VIEW );
+            REGISTER_ACTION( ACTION_TURN_3D_VIEW_LEFT );
+            REGISTER_ACTION( ACTION_TURN_3D_VIEW_RIGHT );
 #endif // TILES
             REGISTER_ACTION( ACTION_TOGGLE_PANEL_ADM );
             REGISTER_ACTION( ACTION_DISPLAY_SCENT );

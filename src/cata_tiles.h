@@ -57,6 +57,7 @@ class memorized_tile;
 class monster;
 class nc_color;
 class pixel_minimap;
+struct scene_3d;
 struct sprite_screen_bounds;
 struct tile_tint;
 struct tint_sprite_record;
@@ -616,6 +617,25 @@ struct texture_draw_data {
  */
 using color_block_overlay_container = std::pair<SDL_BlendMode, std::multimap<point, SDL_Color>>;
 
+/**
+ * In the 3D view, tells the scene what is being drawn for as long as it lives: what a sprite is a
+ * sprite of decides how it is put in the scene. A draw that is started while another one goes on,
+ * as fallbacks for missing sprites are, keeps what the first one said. Does nothing without a
+ * scene.
+ */
+class tile_3d_scope
+{
+    public:
+        tile_3d_scope( scene_3d *scene, TILE_CATEGORY category, const std::string &id,
+                       const tripoint_bub_ms &pos );
+        ~tile_3d_scope();
+        tile_3d_scope( const tile_3d_scope & ) = delete;
+        tile_3d_scope &operator=( const tile_3d_scope & ) = delete;
+
+    private:
+        scene_3d *scene_;
+};
+
 class cata_tiles
 {
         friend class cata_tiles_test_helper;
@@ -640,6 +660,11 @@ class cata_tiles
         void draw( const point &dest, const tripoint_bub_ms &center, int width, int height,
                    std::multimap<point, formatted_text> &overlay_strings,
                    color_block_overlay_container &color_blocks );
+        /**
+         * Draw the map as a first person 3D view (see cata_tiles_3d.cpp) instead of the flat tile
+         * grid that @ref draw draws.
+         */
+        void draw_3d( const point &dest, const tripoint_bub_ms &center, int width, int height );
         void draw_om( const point &dest, const tripoint_abs_omt &center_abs_omt, bool blink );
 
         /** Minimap functionality */
@@ -744,6 +769,12 @@ class cata_tiles
         bool draw_tile_at( const tile_type &tile, const point &, unsigned int loc_rand, int rota,
                            const tile_render_params &rp, int retract, int &height_3d,
                            const point &offset );
+        /** 3D view: place a sprite of the current tile in the scene instead of blitting it. */
+        bool draw_sprite_3d( const tile_type &tile, const texture &sprite_tex, bool shader_bound,
+                             bool rotate_sprite, int rota, const point &offset );
+        /** Memorize the map the character can see, whether it was drawn or not. */
+        void memorize_visible_map( const point &min_visible, const point &max_visible, int z,
+                                   const std::function<bool( const point & )> &skip_tile );
 
         /* Tile Picking */
         void get_tile_values( int t, const std::array<int, 4> &tn, int &subtile, int &rotation,
@@ -1024,6 +1055,10 @@ class cata_tiles
         // true while a z-level binds tint.frag for NORMAL sprites, so untinted
         // NORMAL sprites keep the same state and the batch holds
         bool m_zlev_tint_bound = false;
+
+        // Set only while draw_3d is drawing tiles; makes draw_sprite_at place sprites in the 3D
+        // scene instead of blitting them to the screen
+        scene_3d *m_scene3d = nullptr;
 
         // Scratch render target for the ortho silhouette mask tint path. Sized
         // to fit the largest batched sprite region; reused across tiles/frames.
